@@ -1,0 +1,62 @@
+# 🔐 Environment variables
+.env
+
+# 🐍 Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# 📦 Virtual environment
+.venv/
+venv/
+env/
+
+# 📓 Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# 📊 Data files (large datasets)
+data/
+*.csv
+*.json
+*.parquet
+
+# 🤖 Model files (large ML models)
+models/
+*.pkl
+*.h5
+*.pt
+*.joblib
+
+# 🗄️ Database files
+db/
+*.db
+*.sqlite3
+
+# 🖥️ Logs
+*.log
+
+# 🧪 Testing / temp
+tmp/
+temp/
+*.tmp
+
+# 🧰 IDE/editor settings
+.vscode/
+.idea/
+
+# 📦 Build / distribution
+build/
+dist/
+*.egg-info/
+
+# 🔒 OS files
+.DS_Store
+Thumbs.db
+
+# ⚡ UV / Python version
+.python-version
+uv.lock
+
+# 📄 Misc
+activate.txt
