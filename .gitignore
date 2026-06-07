@@ -1,62 +1,41 @@
-# 🔐 Environment variables
+# Environment
 .env
-
-# 🐍 Python cache
-__pycache__/
-*.py[cod]
-*.pyo
-*.pyd
-
-# 📦 Virtual environment
 .venv/
-venv/
-env/
 
-# 📓 Jupyter Notebook checkpoints
-.ipynb_checkpoints/
+# Large data files
+data/raw/
+data/processed/train.parquet
+data/processed/test.parquet
+data/processed/user_positive_sets.pkl
+data/processed/content_embeddings.pt
+data/processed/movie_content.csv
 
-# 📊 Data files (large datasets)
-data/
-*.csv
-*.json
-*.parquet
+# Large model files
+models/two_tower_best.pt
+models/ncf_best.pkl
+models/svd_baseline.pkl
 
-# 🤖 Model files (large ML models)
-models/
-*.pkl
-*.h5
-*.pt
-*.joblib
+# Database
+data/db/
+data/chromadb/
 
-# 🗄️ Database files
-db/
-*.db
-*.sqlite3
-
-# 🖥️ Logs
-*.log
-
-# 🧪 Testing / temp
-tmp/
-temp/
-*.tmp
-
-# 🧰 IDE/editor settings
-.vscode/
-.idea/
-
-# 📦 Build / distribution
-build/
-dist/
+# Python
+__pycache__/
+*.pyc
+*.pyo
 *.egg-info/
 
-# 🔒 OS files
-.DS_Store
-Thumbs.db
+# Jupyter
+.ipynb_checkpoints/
+notebook/.ipynb_checkpoints/
 
-# ⚡ UV / Python version
-.python-version
+# UV / Python version
 uv.lock
+.python-version
+pyproject.toml
 
-# 📄 Misc
-activate.txt
+# Misc
+Thumbs.db
+.DS_Store
+project_structure.py
+main.py

@@ -1,4 +1,4 @@
-﻿aiohttp
+aiohttp
 chromadb
 fastapi
 numpy
@@ -10,7 +10,7 @@ python-multipart
 requests
 sqlalchemy
 streamlit
-torch
+torch --index-url https://download.pytorch.org/whl/cpu
 tqdm
 transformers
 uvicorn

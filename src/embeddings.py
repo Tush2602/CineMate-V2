@@ -1,24 +1,3 @@
-"""
-embeddings.py
-─────────────
-Pre-computes DistilBERT embeddings for all movies.
-
-Run once before Two-Tower training:
-    python src/embeddings.py
-
-Output:
-    data/processed/content_embeddings.pt
-    Shape: (NUM_MOVIES, 768)
-    Each row is the CLS token embedding for that movie's
-    content string (title + genres + genome tags).
-
-Why pre-compute?
-    Running DistilBERT at training time per batch
-    would be 100x slower. Pre-computing once and
-    storing as a tensor allows instant lookup.
-"""
-
-
 import os 
 import sys
 import pickle
@@ -29,22 +8,14 @@ import torch
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-BASE_DIR           = os.path.dirname(os.path.dirname(__file__))
-DATA_DIR           = os.path.join(BASE_DIR, "data")
+BASE_DIR = os.path.dirname(os.path.dirname(__file__))
+DATA_DIR = os.path.join(BASE_DIR, "data")
 PROCESSED_DATA_DIR = os.path.join(DATA_DIR, "processed")
 
 EMBED_PATH = os.path.join(PROCESSED_DATA_DIR, "content_embeddings.pt")
 CONTENT_PATH = os.path.join(PROCESSED_DATA_DIR, "content_strings.csv")
 
 def compute_embeddings(batch_size=64, max_length = 128, force=False):
-    """
-    Compute and save DistilBERT embeddings for all movies.
-
-    Args:
-        batch_size : movies per forward pass
-        max_length : max token length (128 enough for our strings)
-        force      : recompute even if file exists
-    """
     if os.path.exists(EMBED_PATH) and not force:
         print(f"Embeddings already exist at {EMBED_PATH}")
         print("Pass force=True to recompute.")
@@ -75,7 +46,7 @@ def compute_embeddings(batch_size=64, max_length = 128, force=False):
     print()
 
     print("Loading DistilBERT models")
-    tokenizer =DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
+    tokenizer = DistilBertTokenizer.from_pretrained("distilbert-base-uncased")
     bert_model = DistilBertModel.from_pretrained("distilbert-base-uncased").to(device)
 
     bert_model.eval()
@@ -85,14 +56,7 @@ def compute_embeddings(batch_size=64, max_length = 128, force=False):
         for i in tqdm(range(0, NUM_MOVIES, batch_size), desc="Embeddings"):
             batch_texts = content_strings[i: i+batch_size]
 
-            encoded = tokenizer(
-                batch_texts,
-                padding     = True,
-                truncation  = True,
-                max_length  = max_length,
-                return_tensors = 'pt'
-            ).to(device)
-
+            encoded = tokenizer(batch_texts, padding = True, truncation = True, max_length  = max_length, return_tensors = 'pt').to(device)
             output = bert_model(**encoded)
 
             # CLS token — sentence-level representation
@@ -104,8 +68,8 @@ def compute_embeddings(batch_size=64, max_length = 128, force=False):
 
     size_mb = os.path.getsize(EMBED_PATH) / 1024**2
     print(f"\nEmbeddings saved to : {EMBED_PATH}")
-    print(f"Shape               : {content_embeddings.shape}")
-    print(f"File size           : {size_mb:.1f} MB")
+    print(f"Shape : {content_embeddings.shape}")
+    print(f"File size : {size_mb:.1f} MB")
 
     del bert_model
     torch.cuda.empty_cache()

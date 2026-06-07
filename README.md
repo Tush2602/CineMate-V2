@@ -1,204 +1,336 @@
-dataset.py      →  no imports from src/ — write first
-cf_model.py     →  no imports from src/ — write anytime
-content_model.py→  no imports from src/ — write anytime
-hybrid_model.py →  imports cf + content — must come after both
-evaluate.py     →  standalone metrics — write anytime
-train.py        →  imports all models + dataset — must come last
-embeddings.py   →  standalone script — only needs transformers
-chromadb.py     →  needs trained model output — run after training
-recommend.py    →  imports hybrid_model + chromadb — comes last
+# 🎬 CineMate V2 — Hybrid Movie Recommender System
 
+> A production-grade movie recommendation engine combining Neural Collaborative Filtering with DistilBERT content embeddings, trained on MovieLens 25M with popularity-aware debiasing.
 
+[![Python](https://img.shields.io/badge/Python-3.11-blue)](https://python.org)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.7.1-red)](https://pytorch.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.128-green)](https://fastapi.tiangolo.com)
+[![Streamlit](https://img.shields.io/badge/Streamlit-1.45-ff4b4b)](https://streamlit.io)
+[![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://docker.com)
 
+[![CineMate V2 Demo](https://img.youtube.com/vi/FUzbwOAlzM0/maxresdefault.jpg)](https://youtu.be/FUzbwOAlzM0)
+---
 
+## 📌 Project Overview
 
+CineMate V2 is an end-to-end movie recommendation system built from scratch. It progresses through 5 model iterations — from random baselines to a hybrid Two-Tower neural architecture — and addresses the real-world challenge of **popularity bias** in collaborative filtering systems.
 
-Here's everything that comes after Two-Tower, in order:
+**Key highlights:**
+- Trained on **25M ratings** from 173,134 users across 27,766 movies
+- **Two-Tower hybrid** — CF tower + DistilBERT content tower fused via element-wise product
+- **+79.9% NDCG@10** improvement over SVD baseline
+- **17.9% catalogue coverage** via content-similar tail injection (vs 0.63% raw model)
+- Full stack: FastAPI REST API + SQLite + Streamlit UI + Docker
 
 ---
 
-## The Complete Remaining Roadmap
-
-### Phase 1 — `src/` files (core logic, ~1 week)
+## 🏗 Architecture
 
 ```
-src/dataset.py       →  Move NCFDataset + TwoTowerDataset out of notebooks
-src/cf_model.py      →  Move CollaborativeTower class
-src/content_model.py →  Move ContentTower class
-src/hybrid_model.py  →  Move TwoTowerModel class
-src/train.py         →  Full training script (runs from terminal)
-src/evaluate.py      →  Metric functions
-src/recommend.py     →  Inference — given user_idx → top K movies
-src/embeddings.py    →  Pre-compute + save DistilBERT embeddings
-src/chromadb.py      →  Index embeddings, ANN similarity search
-```
+┌─────────────────────────────────────────────────────────┐
+│                    TWO-TOWER MODEL                       │
+│                                                         │
+│  user_idx ──► CF Tower (128-dim → 64-dim MLP)          │
+│                          │                              │
+│  movie_idx ─────────────►├──► Fusion MLP ──► score     │
+│                          │    [CF ⊕ Content             │
+│  DistilBERT ──► Content  │     ⊕ CF ⊙ Content]         │
+│  Embeddings    Tower     │                              │
+│  (768-dim)  (768→64-dim) │                              │
+└─────────────────────────────────────────────────────────┘
 
-This step converts your notebooks into production-quality Python files. Recruiters who click your GitHub see clean modular code — not one giant notebook.
+Training:  BPR Loss + Popularity Penalty (γ=0.1)
+           Tail Negative Sampling (p_tail=0.4)
+           ReduceLROnPlateau (patience=5)
 
----
-
-### Phase 2 — `db/` files (~2-3 days)
-
-```
-db/database.py   →  SQLAlchemy engine + session setup
-db/models.py     →  ORM table definitions (Movie, User, Rating)
-db/crud.py       →  Query helpers used by API
-```
-
-Populates SQLite with `movies_clean.parquet` data. Your API queries this for movie metadata, titles, posters.
-
----
-
-### Phase 3 — `api/` files (~2-3 days)
-
-```
-api/main.py      →  FastAPI app
-                    GET /recommend/{user_id}
-                    GET /movie/{movie_id}
-                    GET /similar/{movie_id}
-                    POST /feedback (user liked/disliked)
-api/schemas.py   →  Pydantic request/response models
-```
-
-Loads trained model + ChromaDB → serves recommendations via REST endpoints.
-
----
-
-### Phase 4 — `app/` files (~2-3 days)
-
-```
-app/streamlit_app.py  →  Frontend UI
-                          - User ID input
-                          - Top 10 recommendations displayed
-                          - Movie posters via TMDB API
-                          - Genre filters
-                          - "Why recommended?" explanation
+Inference: 7/3 Head/Tail Split
+           Head: Top-7 by model score (≥60th percentile popularity)
+           Tail: Top-3 by cosine similarity to user content profile
 ```
 
 ---
 
-### Phase 5 — DS Layer on top (~1 week)
+## 📊 Results
 
-This is what makes it a DS project not just an MLE project. We discussed this earlier:
+| Model | NDCG@10 | Precision@10 | Recall@10 |
+|-------|---------|-------------|----------|
+| Random | 0.0019 | 0.0018 | 0.0004 |
+| Popularity | 0.0845 | 0.0749 | 0.0225 |
+| SVD | 0.0669 | 0.0607 | 0.0221 |
+| NCF | 0.1252 | 0.1135 | 0.0283 |
+| **Two-Tower (ours)** | **0.1203** | **0.1092** | **0.0286** |
+
+**Debiasing Results:**
+
+| Strategy | NDCG@10 | Coverage |
+|----------|---------|----------|
+| Raw Model | 0.1203 | 0.63% |
+| Random Tail Injection | 0.0946 | 5.39% |
+| Content-Similar Tail Injection | 0.1004 | **17.92%** |
+
+> Evaluated on 2,000 held-out users. Positive threshold: rating ≥ 3.5.
+
+---
+
+## 🗂 Project Structure
 
 ```
-A/B Test simulation   →  Does recommender beat random baseline
-                          for engagement? Statistical significance test.
-
-Business impact       →  "Users who receive recommendations
-                          watch X% more content"
-                          Calculate estimated retention value
-
-Bias analysis         →  Which genres are over/under recommended?
-                          Gender/language bias in recommendations?
-
-Cold start analysis   →  Quantify exactly how many users
-                          are affected and by how much
-
-SQL dashboard         →  All insights queryable via SQLite
-                          Business metrics in one place
+CineMate-V2/
+├── src/                          # Core ML modules
+│   ├── cf_model.py               # CollaborativeTower + NCFModel
+│   ├── hybrid_model.py           # TwoTowerModel
+│   ├── content_model.py          # ContentTower (DistilBERT projection)
+│   ├── dataset.py                # BPR datasets with tail sampling
+│   ├── train.py                  # Training script (CLI)
+│   ├── recommendation.py         # Inference — brute force + tail injection
+│   ├── evaluate.py               # NDCG, Precision, Recall evaluation
+│   ├── debias.py                 # Popularity lookup + debiasing utils
+│   ├── embeddings.py             # DistilBERT embedding precomputation
+│   ├── chroma_db.py              # ChromaDB ANN index (optional)
+│   ├── precompute_recs.py        # Placeholder for offline rec precomputation
+│   └── tune_debias.py            # Debiasing hyperparameter tuning
+│
+├── api/                          # FastAPI REST API
+│   ├── app.py                    # Endpoints: /recommend, /search, /similar, /stats
+│   └── schemas.py                # Pydantic request/response schemas
+│
+├── app/                          # Streamlit frontend
+│   ├── claude_updated.py         # Main UI — Home, Search, About, New Profile
+│   └── no_photo.png              # Fallback poster placeholder
+│
+├── db/                           # Database layer
+│   ├── database.py               # SQLAlchemy engine + session
+│   ├── models.py                 # ORM: Movie, Recommendation, RatingEvent
+│   ├── crud.py                   # DB operations
+│   └── init_db.py                # DB initialisation + movie population
+│
+├── notebook/                     # Jupyter notebooks
+│   ├── 01 EDA.ipynb              # Exploratory data analysis
+│   ├── 02 preprocessing.ipynb    # Data cleaning + feature engineering
+│   ├── 03 baseline_SVD.ipynb     # SVD + Random + Popularity baselines
+│   ├── 04 neural cf.ipynb        # NCF — NDCG@10: 0.1252
+│   ├── 05 two tower.ipynb        # Two-Tower — NDCG@10: 0.1203
+│   ├── 06 ab_test.ipynb          # A/B test — debiased vs raw
+│   ├── 07_business_impact.ipynb  # Business metrics analysis
+│   ├── 08_bias_fairness.ipynb    # Popularity + genre bias analysis
+│   └── 09_recommendation_analysis.ipynb  # Coverage + diversity analysis
+│
+├── data/
+│   ├── processed/
+│   │   ├── plots/                # Training + evaluation visualisations (in repo)
+│   │   ├── encoders/             # user2idx, movie2idx mappings (in repo)
+│   │   ├── movies_clean.parquet  # Movie metadata (in repo)
+│   │   ├── dataset_constants.pkl # NUM_USERS, NUM_MOVIES (in repo)
+│   │   ├── popularity_lookup.npy # Normalised popularity scores (in repo)
+│   │   ├── content_embeddings.pt # DistilBERT embeddings (NOT in repo — 212MB)
+│   │   ├── train.parquet         # Training ratings (NOT in repo — large)
+│   │   └── user_positive_sets.pkl# User history (NOT in repo — large)
+│   └── raw/                      # MovieLens 25M raw files (NOT in repo)
+│
+├── models/
+│   ├── two_tower_best.pt         # Trained weights (NOT in repo — 700MB)
+│   ├── two_tower_results.json    # Evaluation metrics (in repo)
+│   ├── ncf_results.json          # NCF metrics (in repo)
+│   ├── svd_baseline_results.json # SVD metrics (in repo)
+│   └── *_training_history.csv    # Loss curves (in repo)
+│
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt              # GPU setup (local development)
+├── requirements_docker.txt       # CPU setup (Docker / deployment)
+├── .env.example
+└── README.md
 ```
 
 ---
 
-### Phase 6 — Deployment (~2-3 days)
+## 🚀 Quick Start
 
+### Prerequisites
+- Python 3.11+
+- CUDA GPU recommended (CPU works but ~30-60s per request)
+- TMDB API key — free at [themoviedb.org](https://www.themoviedb.org/settings/api)
+
+### 1. Clone & Setup
+
+```bash
+git clone https://github.com/Tush2602/CineMate-V2.git
+cd CineMate-V2
+python -m venv .venv
+.venv\Scripts\activate      # Windows
+pip install -r requirements.txt
 ```
-Dockerfile            →  Container for API
-HuggingFace Spaces    →  Deploy Streamlit frontend (free)
-Render / Railway      →  Deploy FastAPI backend (free tier)
-GitHub Actions        →  Basic CI — runs on every push
+
+### 2. Environment Variables
+
+```bash
+cp .env.example .env
+# Edit .env — add your TMDB_API_KEY
 ```
+
+### 3. Download Data & Models
+
+> **Note:** Large files are not included in this repo due to size constraints.
+>
+> - Download MovieLens 25M from [grouplens.org](https://grouplens.org/datasets/movielens/25m/)
+> - Run preprocessing notebooks in order: `01 EDA → 02 preprocessing → 03 baseline → 04 NCF → 05 Two-Tower`
+> - Or download preprocessed files + trained model from [HuggingFace](https://huggingface.co/Tush2602/cinemate-v2)
+
+### 4. Initialise Database
+
+```bash
+python db/init_db.py
+```
+
+### 5. Run
+
+**Terminal 1 — API:**
+```bash
+uvicorn api.app:app --reload --port 8000
+```
+
+**Terminal 2 — Streamlit:**
+```bash
+streamlit run app/claude_updated.py
+```
+
+Open `http://localhost:8501`
 
 ---
 
-### Phase 7 — Polish (~2-3 days)
+## 🐳 Docker
 
+```bash
+docker-compose up
 ```
-README.md             →  Architecture diagram, results table,
-                          live demo link, how to run
-requirements.txt      →  Pinned versions
-Medium/LinkedIn post  →  2 paragraphs explaining what you built
-Resume line           →  Final version with real metrics
-```
+
+API: `http://localhost:8000`
+UI: `http://localhost:8501`
+
+> Docker uses CPU-only PyTorch. Inference will be slower (~30-60s) compared to GPU setup.
+> Ensure `data/` and `models/` directories are populated before running.
 
 ---
 
-## Full Timeline
+## 🔌 API Endpoints
 
-```
-Now          →  Retrain NCF (overnight)
-Week 1       →  05_two_tower.ipynb
-Week 2       →  src/ files (dataset, models, train, evaluate)
-Week 3       →  src/ files (recommend, embeddings, chromadb)
-Week 4       →  db/ + api/ files
-Week 5       →  app/ Streamlit frontend
-Week 6       →  DS layer (A/B test, business impact, bias)
-Week 7       →  Deployment + README
-Week 8       →  Polish + resume line + blog post
-```
-
----
-
-## Priority order if time is short
-
-If you have limited time and need to apply soon:
-
-```
-Must have  →  Two-Tower trained + metrics
-              src/recommend.py working
-              Streamlit deployed with live demo link
-              README with results table
-
-Good to have →  FastAPI endpoint
-                ChromaDB ANN search
-                DS layer analysis
-
-Nice to have →  Docker
-                CI/CD
-                Bias analysis
-```
-
-A live demo link + clean GitHub + real NDCG numbers on your resume is 80% of what gets you shortlisted. Everything else is depth for the interview discussion.
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | API health check |
+| GET | `/recommend/{user_idx}` | Top-K personalised recommendations |
+| GET | `/recommend/gems/{user_idx}` | Tail-debiased hidden gems |
+| GET | `/similar/{movie_idx}` | Content-similar movies |
+| GET | `/search` | Full-text movie search |
+| GET | `/popular` | Most rated movies |
+| GET | `/stats` | Recommendation analytics |
+| POST | `/feedback` | Log user rating |
+| GET | `/docs` | Interactive Swagger UI |
 
 ---
 
-## The interview story when complete
+## 🧠 Training Details
 
-> *"I built a Two-Tower hybrid recommender on MovieLens 33M — SVD baseline NDCG@10 was 0.067, NCF improved it to 0.11, and the Two-Tower with DistilBERT content embeddings reached 0.16. I then ran an A/B test simulation showing the recommender increases relevant movie exposure by 38% over random, estimated at ₹1.8M annual retention value. Deployed via FastAPI on Render with a Streamlit frontend on HuggingFace Spaces."*
+| Parameter | Value |
+|-----------|-------|
+| Dataset | MovieLens 25M |
+| Train ratings | 25,868,311 |
+| Test ratings | 795,563 |
+| Users | 173,134 |
+| Movies | 27,766 |
+| Epochs | 50 |
+| Batch size | 2,048 |
+| Optimizer | Adam (lr=1e-3, wd=1e-4) |
+| Loss | BPR + Popularity Penalty (γ=0.1) |
+| Scheduler | ReduceLROnPlateau (patience=5) |
+| Train time | ~4.6 hours (NVIDIA GPU) |
+| Best BPR Loss | 0.0605 (epoch 48) |
 
-That's a complete, defensible DS + MLE story. Finish the Two-Tower first and we'll go file by file from there.
+---
 
+## ⚠️ Known Limitations & Future Work
 
+### Current Limitations
 
-streamlit app too off 
+**1. Popularity Bias**
+Collaborative filtering inherently amplifies popularity bias — movies with more ratings develop stronger representations. Shawshank Redemption, The Matrix, and Pulp Fiction dominate Top Picks for most users due to their high rating volume in the training data.
 
-New user feature is not kinda active it is like dummy when i click new user  it ask me for my genres and when i click on some genres it take me to home page and does nothing 
+**2. Tail Movie Representations**
+Movies below the 70th percentile in rating count have sparse training signals, resulting in weak embeddings. The "Beyond the Obvious" debiasing section uses content-similar tail injection as a post-hoc fix — effective at increasing coverage (0.63% → 17.9%) but tail recommendations lack the relevance precision of head recommendations.
 
-similiarly the button at the top of pages  like home search my list about is kind of inactivate and also the poster is not visible for recommendation (home page)
+**3. Cold Start**
+New users receive genre-based recommendations via content similarity — not model-personalised. This is intentionally honest cold-start handling.
 
-also improve the about part of cinemate and replace the name cinemate to cinemate V2 from like everywhere you find 
+**4. Static Model**
+User ratings submitted via the app are logged to SQLite for analytics but do not retrain the model. Offline retraining is required to incorporate new signals.
 
+**5. Inference Speed**
+Brute-force scoring across 27,766 movies takes ~400ms on GPU, ~30-60s on CPU. Production systems would use ANN indexing (ChromaDB integration included but optional).
 
+### Future Work
 
-and also we had created a this much great number of graph while doing eda and in notebook file of 6 7 8 9 ? Why they are saved at plots what are they reason they are for 
+- **Exposure-aware BPR loss** — weight loss by inverse propensity score to reduce popularity bias at training time
+- **Sequence modelling** — SASRec or BERT4Rec for richer user representations using watch history
+- **Online learning** — incorporate real-time rating feedback into model updates
+- **ANN deployment** — ChromaDB index for sub-10ms inference at scale
+- **A/B testing framework** — compare debiased vs raw recommendations on real engagement metrics
 
+---
 
+## 🛠 Tech Stack
 
-use them in our streamlit folder to explain people in perfect english language 
+| Layer | Technology |
+|-------|-----------|
+| ML Framework | PyTorch 2.7 |
+| NLP Embeddings | HuggingFace Transformers (DistilBERT) |
+| API | FastAPI + Uvicorn |
+| Database | SQLite + SQLAlchemy + Alembic |
+| Frontend | Streamlit |
+| Vector Store | ChromaDB (optional ANN) |
+| Containerisation | Docker + Docker Compose |
+| Data | MovieLens 25M (GroupLens) |
+| Poster API | TMDB API (free tier) |
 
+---
 
+## 📓 Notebooks
 
-and implement some of the changes by applying your big brain to make it production ready and user life after seeing it 
+| Notebook | Description |
+|----------|-------------|
+| `01 EDA` | Rating distributions, genre analysis, long-tail visualisation |
+| `02 preprocessing` | Data cleaning, train/test split, feature engineering |
+| `03 baseline_SVD` | SVD + Random + Popularity baselines |
+| `04 neural cf` | Neural Collaborative Filtering — NDCG@10: 0.1252 |
+| `05 two tower` | Two-Tower hybrid — training, evaluation, model comparison |
+| `06 ab_test` | A/B test — debiased vs raw recommendations |
+| `07 business_impact` | Business metrics — CTR simulation, coverage analysis |
+| `08 bias_fairness` | Popularity + genre bias quantification |
+| `09 recommendation_analysis` | Coverage, diversity, personalisation analysis |
 
+---
 
+## 👤 Author
 
-and after implementing all this thing and you are free to implement much more new thing on your own , return me newly perfectly crafted  streamlit_app.py >>>>>> after seeing this we must be proud of our works and can show it to anyone and adjust the themes like ki everybody must like it 
+**Tushar Joshi**
+B.Tech Electrical Engineering, PEC Chandigarh
+Aspiring ML / Data Scientist with strong interest in production ML systems
 
- Thank you
+[![GitHub](https://img.shields.io/badge/GitHub-Tush2602-black?logo=github)](https://github.com/Tush2602)
+[![LinkedIn](https://img.shields.io/badge/LinkedIn-Tushar_Joshi-blue?logo=linkedin)](https://www.linkedin.com/in/tushar-joshi-47a5a9311)
 
+---
 
+## 📄 License
 
-and after it we will initiating our deployment work make sure no error or problem occur while doing it 
+MIT License — feel free to use, modify, and distribute.
 
-see dont take it badly ki i am judging you , but as an auddience i am feeling like it too off and need many changes in order to be gread admirer, i hope you understand my concern.................
+---
+
+## ⭐ Support
+
+If this project helped you or inspired you, consider giving it a ⭐
+
+It helps others discover production-ready ML system design patterns.
+
+---
+
+> *"The best recommendation is one the user didn't know they wanted."*

@@ -1,15 +1,3 @@
-"""
-content_model.py
-────────────────
-Content Tower for the Two-Tower model.
-
-Takes pre-computed DistilBERT embeddings (768-dim)
-and projects them down to output_dim via an MLP.
-
-Pre-computation is handled by embeddings.py.
-This module handles only the projection layer.
-"""
-
 import torch
 import torch.nn as nn
 

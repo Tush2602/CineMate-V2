@@ -1,16 +1,3 @@
-"""
-dataset.py 
-──────────
-Pytorch dataset for the two tower recommender.
-
-Classes
-
- - NCFDataset - BPR Triplets for NCF Training 
- - TwoTowerDataset - BPR triplets for Two-Tower training
- - InferenceDataset - Single user * all movies for evaluation 
-
-"""
-
 import numpy as np 
 import pandas as pd 
 
@@ -30,40 +17,23 @@ class NCFDataset(Dataset):
         self.movies = positive_df['movie_idx'].values.astype(np.int32)
         self.tail_movies = None
         if use_tail_sampling:
-            movie_counts = ratings_df.groupby(
-                'movie_idx'
-            ).size()
-            threshold    = movie_counts.quantile(0.70)
-            tail_idxs    = movie_counts[
-                movie_counts <= threshold
-            ].index.values
+            movie_counts = ratings_df.groupby('movie_idx').size()
+            threshold = movie_counts.quantile(0.70)
+            tail_idxs = movie_counts[movie_counts <= threshold].index.values
             self.tail_movies = tail_idxs
-            print(f"Tail movies (≤70th pct popularity) : "
-                f"{len(self.tail_movies):,}")
+            print(f"Tail movies (≤70th pct popularity) : {len(self.tail_movies)}")
 
 
     def __len__(self):
         return len(self.users)
-    
-    # In src/dataset.py — replace __getitem__ negative sampling
 
     def __getitem__(self, idx):
-        user_idx    = int(self.users[idx])
-        pos_movie   = int(self.movies[idx])
-        seen_movies = self.user_positive_sets.get(
-            user_idx, set()
-        )
+        user_idx = int(self.users[idx])
+        pos_movie = int(self.movies[idx])
+        seen_movies = self.user_positive_sets.get(user_idx, set())
+        P_TAIL = 0.4  
 
-        # ── Popularity-aware negative sampling ───────────────
-        # With probability p_tail → sample from tail (D1-D7)
-        # With probability 1-p_tail → uniform sample
-        # This forces model to learn tail movie representations
-
-        P_TAIL = 0.4   # 40% of negatives from tail
-
-        if (np.random.random() < P_TAIL
-                and self.tail_movies is not None):
-            # Sample from tail movies (bottom 70% by popularity)
+        if (np.random.random() < P_TAIL and self.tail_movies is not None):
             neg_movie = int(np.random.choice(self.tail_movies))
         else:
             neg_movie = np.random.randint(0, self.num_movies)
@@ -71,24 +41,15 @@ class NCFDataset(Dataset):
         for _ in range(self.neg_sample_tries):
             if neg_movie not in seen_movies:
                 break
-            if (np.random.random() < P_TAIL
-                    and self.tail_movies is not None):
-                neg_movie = int(
-                    np.random.choice(self.tail_movies)
-                )
+            if (np.random.random() < P_TAIL and self.tail_movies is not None):
+                neg_movie = int(np.random.choice(self.tail_movies))
             else:
-                neg_movie = np.random.randint(
-                    0, self.num_movies
-                )
+                neg_movie = np.random.randint(0, self.num_movies)
 
         return {
-            'user_idx'  : torch.tensor(user_idx,
-                                    dtype=torch.long),
-            'pos_movie' : torch.tensor(pos_movie,
-                                    dtype=torch.long),
-            'neg_movie' : torch.tensor(neg_movie,
-                                    dtype=torch.long),
-        }
+            'user_idx' : torch.tensor(user_idx, dtype=torch.long),
+            'pos_movie' : torch.tensor(pos_movie, dtype=torch.long),
+            'neg_movie' : torch.tensor(neg_movie, dtype=torch.long)}
 
 class TwoTowerDataset(Dataset):
     def __init__(self, ratings_df, user_positive_sets, num_movies, postive_thresholds = 3.5, neg_sample_tries= 10):
@@ -123,17 +84,6 @@ class TwoTowerDataset(Dataset):
     
 
 class InferenceDataset(Dataset):
-    """
-    Dataset for score all movies for a single users.
-    used during evaluation and recommendations generations
-
-    Returns (user_idx, movie_idx) pairs for all movies.
-
-    args: 
-        user_idx   : int — the user to generate recs for
-        num_movies : int — score all movies 0..num_movies-1
-        seen_movies: set — movies to mask out (already seen)
-    """
     def __init__(self, user_idx, num_movies, seen_movies=None):
         self.num_movies= num_movies
         self.user_idx= user_idx
@@ -146,6 +96,6 @@ class InferenceDataset(Dataset):
     def __getitem__(self, idx):
         movie_idx= self.all_movies[idx]
         return {
-            'user_idx'  : torch.tensor(self.user_idx, dtype=torch.long),
-            'movie_idx' : torch.tensor(movie_idx,     dtype=torch.long),
+            'user_idx' : torch.tensor(self.user_idx, dtype=torch.long),
+            'movie_idx' : torch.tensor(movie_idx,dtype=torch.long),
         }
