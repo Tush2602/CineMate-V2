@@ -1,10 +1,11 @@
--ck--
+---
 title: Cinemate V2
 emoji: 🎬
 colorFrom: red
 colorTo: black
 sdk: docker
 app_port: 7860
+pinned: false
 ---
 
 # 🎬 CineMate V2 — Hybrid Movie Recommender System
