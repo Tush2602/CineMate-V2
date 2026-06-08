@@ -2,7 +2,7 @@
 title: Cinemate V2
 emoji: 🎬
 colorFrom: red
-colorTo: black
+colorTo: gray
 sdk: docker
 app_port: 7860
 pinned: false
