@@ -6,7 +6,6 @@ colorTo: gray
 sdk: docker
 app_port: 7860
 pinned: true
-short_description: Hybrid movie recommender — Two-Tower + DistilBERT + Debiasing
 ---
 
 # 🎬 CineMate V2 — Hybrid Movie Recommender System
