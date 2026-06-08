@@ -36,27 +36,22 @@ CineMate V2 is an end-to-end movie recommendation system built from scratch. It 
 
 ## 🏗 Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    TWO-TOWER MODEL                       │
-│                                                         │
-│  user_idx ──► CF Tower (128-dim → 64-dim MLP)          │
-│                          │                              │
-│  movie_idx ─────────────►├──► Fusion MLP ──► score     │
-│                          │    [CF ⊕ Content             │
-│  DistilBERT ──► Content  │     ⊕ CF ⊙ Content]         │
-│  Embeddings    Tower     │                              │
-│  (768-dim)  (768→64-dim) │                              │
-└─────────────────────────────────────────────────────────┘
+**Input → Towers → Fusion → Score**
 
-Training:  BPR Loss + Popularity Penalty (γ=0.1)
-           Tail Negative Sampling (p_tail=0.4)
-           ReduceLROnPlateau (patience=5)
+| Component | Input | Output | Details |
+|-----------|-------|--------|---------|
+| CF Tower | user_idx + movie_idx | 64-dim | Embedding lookup → MLP (128→64) |
+| Content Tower | DistilBERT embeddings | 64-dim | Linear projection (768→64) |
+| Fusion MLP | CF ⊕ Content ⊕ (CF ⊙ Content) | scalar | 192→128→64→1 |
 
-Inference: 7/3 Head/Tail Split
-           Head: Top-7 by model score (≥60th percentile popularity)
-           Tail: Top-3 by cosine similarity to user content profile
-```
+**Training:**
+- Loss: BPR + Popularity Penalty (γ=0.1)
+- Negative Sampling: Tail-biased (p_tail=0.4)
+- Scheduler: ReduceLROnPlateau (patience=5)
+
+**Inference — 7/3 Head/Tail Split:**
+- Head (7 slots): Top-7 by model score among ≥60th percentile popularity movies
+- Tail (3 slots): Top-3 by cosine similarity to user content profile
 
 ---
 
@@ -321,12 +316,11 @@ Brute-force scoring across 27,766 movies takes ~400ms on GPU, ~30-60s on CPU. Pr
 ## 👤 Author
 
 **Tushar Joshi**
-B.Tech Electrical Engineering, PEC Chandigarh
+B.Tech Electrical Engineering 2028 batch, PEC Chandigarh
 Aspiring ML / Data Scientist with strong interest in production ML systems
 
-[![GitHub](https://img.shields.io/badge/GitHub-Tush2602-black?logo=github)](https://github.com/Tush2602)
-[![LinkedIn](https://img.shields.io/badge/LinkedIn-Tushar_Joshi-blue?logo=linkedin)](https://www.linkedin.com/in/tushar-joshi-47a5a9311)
-
+- 🔗 **GitHub:** [github.com/Tush2602](https://github.com/Tush2602)
+- 💼 **LinkedIn:** [Tushar Joshi](https://www.linkedin.com/in/tushar-joshi-47a5a9311)
 ---
 
 ## 📄 License
@@ -339,7 +333,7 @@ MIT License — feel free to use, modify, and distribute.
 
 If this project helped you or inspired you, consider giving it a ⭐
 
-It helps others discover production-ready ML system design patterns.
+It helps others discover my recommendation system.
 
 ---
 
