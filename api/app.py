@@ -330,11 +330,47 @@ def root():
     }
         
 # ── Auto-download large files from HuggingFace ────────────────────────────
+# def download_large_files():
+#     from huggingface_hub import hf_hub_download
+#     from pathlib import Path
+
+#     REPO_ID = "Tush2602/cinemate-v2"
+
+#     files = [
+#         "models/two_tower_best.pt",
+#         "data/processed/content_embeddings.pt",
+#         "data/processed/user_positive_sets.pkl",
+#         "data/processed/dataset_constants.pkl",
+#         "data/processed/movies_clean.parquet",
+#         "data/processed/popularity_lookup.npy",
+#         "data/processed/movie_content.csv",
+#         "data/processed/encoders/idx2movie.pkl",
+#         "data/processed/encoders/idx2user.pkl",
+#         "data/processed/encoders/movie2idx.pkl",
+#         "data/processed/encoders/user2idx.pkl",
+#     ]
+
+#     for file_path in files:
+#         local = Path(file_path)
+#         if not local.exists():
+#             print(f"Downloading {file_path}...")
+#             local.parent.mkdir(parents=True, exist_ok=True)
+#             hf_hub_download(
+#                 repo_id   = REPO_ID,
+#                 filename  = file_path,
+#                 local_dir = ".",
+#                 repo_type = "model"
+#             )
+#             print(f"Done: {file_path}")
+#         else:
+#             print(f"Exists: {file_path}")
+
 def download_large_files():
     from huggingface_hub import hf_hub_download
     from pathlib import Path
 
     REPO_ID = "Tush2602/cinemate-v2"
+    BASE_DIR = Path("/app")  # ✅ absolute path
 
     files = [
         "models/two_tower_best.pt",
@@ -351,18 +387,17 @@ def download_large_files():
     ]
 
     for file_path in files:
-        local = Path(file_path)
+        local = BASE_DIR / file_path
         if not local.exists():
             print(f"Downloading {file_path}...")
             local.parent.mkdir(parents=True, exist_ok=True)
             hf_hub_download(
-                repo_id   = REPO_ID,
-                filename  = file_path,
-                local_dir = ".",
-                repo_type = "model"
+                repo_id=REPO_ID,
+                filename=file_path,
+                local_dir=str(BASE_DIR),  # ✅ /app ko base banao
+                repo_type="model"
             )
-            print(f"Done: {file_path}")
+            print(f"✅ Done: {file_path}")
         else:
-            print(f"Exists: {file_path}")
-
+            print(f"⏭️ Exists: {file_path}")
 download_large_files()
