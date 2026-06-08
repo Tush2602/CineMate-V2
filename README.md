@@ -1,11 +1,12 @@
 ---
-title: Cinemate V2
+title: CineMate V2
 emoji: 🎬
 colorFrom: red
 colorTo: gray
 sdk: docker
 app_port: 7860
-pinned: false
+pinned: true
+short_description: Hybrid movie recommender — Two-Tower + DistilBERT + Debiasing
 ---
 
 # 🎬 CineMate V2 — Hybrid Movie Recommender System
