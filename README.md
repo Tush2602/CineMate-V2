@@ -1,3 +1,12 @@
+-ck--
+title: Cinemate V2
+emoji: 🎬
+colorFrom: red
+colorTo: black
+sdk: docker
+app_port: 7860
+---
+
 # 🎬 CineMate V2 — Hybrid Movie Recommender System
 
 > A production-grade movie recommendation engine combining Neural Collaborative Filtering with DistilBERT content embeddings, trained on MovieLens 25M with popularity-aware debiasing.
