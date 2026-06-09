@@ -407,6 +407,7 @@ def download_large_files():
         "data/processed/plots/14_personalisation.png",
         "data/processed/plots/15_genre_diversity.png",
         "data/processed/plots/_model_comparison.png",
+        "app/no_photo.png",
     ]
 
     for file_path in files:
