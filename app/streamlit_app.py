@@ -13,7 +13,7 @@ from dotenv import load_dotenv
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 load_dotenv()
 
-API_URL        = os.getenv("API_URL", "http://localhost:8000")
+API_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 TMDB_API_KEY   = os.getenv("TMDB_API_KEY", "")
 TMDB_IMG       = "https://image.tmdb.org/t/p/w500"
 TMDB_BACK      = "https://image.tmdb.org/t/p/w1280"
