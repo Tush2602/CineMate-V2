@@ -9,9 +9,9 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-
+from dotenv import load_dotenv
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
+load_dotenv()
 from db.database import get_db, init_db
 from db import crud
 from api.schemas import (RecommendationRequest, RecommendationResponse, RecommendedMovie, MovieDetail, MovieBase, 
@@ -366,11 +366,17 @@ def root():
 #             print(f"Exists: {file_path}")
 
 def download_large_files():
-    from huggingface_hub import hf_hub_download
+    from huggingface_hub import hf_hub_download, login
     from pathlib import Path
+    import os
+
+
+    hf_token = os.getenv("HF_TOKEN")
+    if hf_token:
+        login(token=hf_token)
 
     REPO_ID = "Tush2602/cinemate-v2"
-    BASE_DIR = Path("/app")  # ✅ absolute path
+    BASE_DIR = Path("/app")
 
     files = [
         "models/two_tower_best.pt",
@@ -384,6 +390,23 @@ def download_large_files():
         "data/processed/encoders/idx2user.pkl",
         "data/processed/encoders/movie2idx.pkl",
         "data/processed/encoders/user2idx.pkl",
+        "data/processed/plots/01_rating_distribution.png",
+        "data/processed/plots/02_ratings_per_user.png",
+        "data/processed/plots/03_ratings_per_movie.png",
+        "data/processed/plots/04_ratings_over_time.png",
+        "data/processed/plots/05_genre_distribution.png",
+        "data/processed/plots/06_top_tags.png",
+        "data/processed/plots/07_avg_rating_genre.png",
+        "data/processed/plots/08_ncf_training_loss.png",
+        "data/processed/plots/08_training_loss.png",
+        "data/processed/plots/09_model_comparison.png",
+        "data/processed/plots/09_ncf_comparison.png",
+        "data/processed/plots/10_ab_test_results.png",
+        "data/processed/plots/12_popularity_bias.png",
+        "data/processed/plots/13_genre_bias.png",
+        "data/processed/plots/14_personalisation.png",
+        "data/processed/plots/15_genre_diversity.png",
+        "data/processed/plots/_model_comparison.png",
     ]
 
     for file_path in files:
@@ -392,12 +415,13 @@ def download_large_files():
             print(f"Downloading {file_path}...")
             local.parent.mkdir(parents=True, exist_ok=True)
             hf_hub_download(
-                repo_id=REPO_ID,
-                filename=file_path,
-                local_dir=str(BASE_DIR),  # ✅ /app ko base banao
-                repo_type="model"
+                repo_id   = REPO_ID,
+                filename  = file_path,
+                local_dir = str(BASE_DIR),
+                repo_type = "model"
             )
             print(f"✅ Done: {file_path}")
         else:
             print(f"⏭️ Exists: {file_path}")
+
 download_large_files()
