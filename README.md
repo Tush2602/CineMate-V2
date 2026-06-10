@@ -19,6 +19,8 @@ short_description: "Hybrid movie recommender with Two-Tower model"
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.45-ff4b4b)](https://streamlit.io)
 [![Docker](https://img.shields.io/badge/Docker-Ready-blue)](https://docker.com)
 
+🚀 **[Live Demo](https://huggingface.co/spaces/Tush2602/cinemate)** — Deployed on HuggingFace Spaces
+
 [![CineMate V2 Demo](https://img.youtube.com/vi/FUzbwOAlzM0/maxresdefault.jpg)](https://youtu.be/FUzbwOAlzM0)
 ---
 
