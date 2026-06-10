@@ -39,6 +39,15 @@ async def lifespan(app : FastAPI):
     #Initialize database tables
     init_db()
 
+    # Populate movies if DB is empty
+    from db.database import SessionLocal
+    from db.init_db import populate_movies
+    db_session = SessionLocal()
+    try:
+        populate_movies(db_session)
+    finally:
+        db_session.close()
+
     # Load recommendation model
     print("Loading Two-Tower model...")
     recommender = Recommender()
